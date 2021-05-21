@@ -40,25 +40,22 @@ export class Client {
 		}
 
 		return new Promise((resolve, reject) => {
-			let error: any;
-
 			let args = [this.options.path, '-header', '-json'];
 			let instance = spawn(this.options.bin, args);
 
-			instance.on('error', (err) => error = err);
+			instance.once('spawn', () => {
+				this.#instance = instance;
+				resolve(this);
+			});
+
+			instance.once('error', (err) => {
+				reject(err);
+			});
+
 			instance.on('close', this.#handle_close);
 
 			instance.stderr.on('data', this.#handle_stderr);
 			instance.stdout.on('data', this.#handle_stdout);
-
-			setImmediate(() => {
-				if (error) {
-					reject(error)
-				} else {
-					this.#instance = instance;
-					resolve(this);
-				}
-			});
 		});
 	}
 
